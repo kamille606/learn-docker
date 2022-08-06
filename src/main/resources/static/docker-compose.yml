@@ -1,0 +1,44 @@
+version: '3'
+
+services:
+  microService:
+    image: user-docker:1.0
+    container_name: user-docker
+    ports:
+      - '8080:8080'
+    networks:
+      - lain-net
+    volumes:
+      - /opt/docker-user/log:/opt/log
+    depends_on:
+      - redis
+      - mysql
+  redis:
+    image: redis:6.0.8
+    container_name: redis
+    ports:
+      - '6379:6379'
+    networks:
+      - lain-net
+    volumes:
+      - /opt/redis/data:/data
+      - /opt/redis/redis.conf:/etc/redis/redis.conf
+    command: redis-server /etc/redis/redis.conf
+  mysql:
+    image: mysql:5.7
+    container_name: mysql
+    ports:
+      - '3306:3306'
+    networks:
+      - lain-net
+    volumes:
+      - /opt/mysql/log:/var/log/mysql
+      - /opt/mysql/data:/var/lib/mysql
+      - /opt/mysql/conf:/etc/mysql/conf.d
+    environment:
+      MYSQL_ROOT_PASSWORD: '123456'
+      MYSQL_ALLOW_EMPTY_PASSWORD: 'no'
+    command: --default-authentication-plugin=mysql_native_password
+
+networks:
+  lain-net:
