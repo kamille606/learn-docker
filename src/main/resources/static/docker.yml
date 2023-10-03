@@ -1,0 +1,99 @@
+version: '3'
+services:
+  namesrv:
+    image: apacherocketmq/rocketmq:4.6.0
+    container_name: rocketmq-namesrv
+    volumes:
+      - /home/rocketmq/namesrv/logs:/home/rocketmq/rocketmq-4.6.0/logs
+    privileged: true
+    restart: always
+    environment:
+      - JAVA_OPT_EXT=-server -Xms256m -Xmx256m -Xmn256m
+    ports:
+      - '9876:9876'
+    command: sh mqnamesrv
+  broker:
+    image: apacherocketmq/rocketmq:4.6.0
+    container_name: rocketmq-broker
+    links:
+      - namesrv
+    depends_on:
+      - namesrv
+    volumes:
+      - /home/rocketmq/broker/logs:/home/rocketmq/rocketmq-4.6.0/logs
+      - /home/rocketmq/broker/data:/home/rocketmq/rocketmq-4.6.0/store
+      - /home/rocketmq/broker/conf/broker.conf:/home/rocketmq/rocketmq-4.6.0/conf/broker.conf
+    environment:
+      - NAMESRV_ADDR=namesrv:9876
+      - JAVA_OPT_EXT=-server -Xms512m -Xmx512m -Xmn256m
+    ports:
+      - '10909:10909'
+      - '10911:10911'
+      - '10912:10912'
+    command: sh mqbroker -c /home/rocketmq/rocketmq-4.6.0/conf/broker.conf
+  mysql:
+    image: mysql:8.0
+    container_name: mysql
+    volumes:
+      - /home/mysql/data:/var/lib/mysql
+      - /home/mysql/conf:/etc/mysql/conf.d
+      - /home/mysql/logs:/var/log/mysql
+    privileged: true
+    restart: always
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: starTrails@2023
+    ports:
+      - '3306:3306'
+  nacos:
+    image: nacos/nacos-server:v1.4.3
+    container_name: nacos
+    volumes:
+      - /home/nacos/logs:/home/nacos/logs
+      - /home/nacos/conf/application.properties:/home/nacos/conf/application.properties
+    restart: always
+    environment:
+      - PREFER_HOST_MODE=ip
+      - MODE=standalone
+      - SPRING_DATASOURCE_PLATFORM=mysql
+      - JVM_XMS=512m
+      - JVM_MMS=320m
+    ports:
+      - "8848:8848"
+  clickhouse:
+    image: yandex/clickhouse-server:22.1.3.7
+    container_name: clickhouse
+    volumes:
+      - /home/clickhouse/data:/var/lib/clickhouse
+      - /home/clickhouse/logs:/var/log/clickhouse-server
+      - /home/clickhouse/conf/config.xml:/etc/clickhouse-server/config.xml
+      - /home/clickhouse/conf/users.xml:/etc/clickhouse-server/users.xml
+    privileged: true
+    restart: always
+    environment:
+      TZ: Asia/Shanghai
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+  postgres:
+    image: postgres:14.7
+    container_name: postgres
+    volumes:
+      - /home/postgres/data:/var/lib/postgresql/data
+    privileged: true
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: starTrails@2023
+    ports:
+      - "5432:5432"
+  redis:
+    image: redis:6.0.8
+    container_name: redis
+    volumes:
+      - /opt/redis/data:/data
+      - /opt/redis/conf/redis.conf:/etc/redis/redis.conf
+    command: redis-server /etc/redis/redis.conf --requirepass starTrails@2023
+    privileged: true
+    restart: always
+    ports:
+      - "6379:6379"
